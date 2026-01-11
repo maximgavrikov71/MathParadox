@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парадокс Галилея: Визуализация</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .number-node { transition: all 0.3s ease; }
+        .line-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 1.5s forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-xl p-6 md:p-10">
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-slate-800 mb-4">Парадокс Галилея</h1>
+            <p class="text-slate-600 leading-relaxed max-w-2xl mx-auto">
+                Галилео Галилей заметил странный факт: хотя не каждое число является квадратом, 
+                квадратов ровно столько же, сколько и всех натуральных чисел. 
+                Это доказывается через <strong>взаимно-однозначное соответствие</strong>.
+            </p>
+        </header>
+
+        <!-- Visualization Area -->
+        <div class="relative overflow-hidden border border-slate-100 rounded-xl bg-slate-50 p-4 mb-8">
+            <svg id="viz-svg" class="w-full h-80" viewBox="0 0 800 320">
+                <!-- Lines will be injected here -->
+                <g id="lines-group"></g>
+                
+                <!-- Top Row: Natural Numbers -->
+                <g id="natural-numbers"></g>
+                
+                <!-- Bottom Row: Squares -->
+                <g id="square-numbers"></g>
+                
+                <text x="10" y="40" class="text-xs font-semibold fill-slate-400">НАТУРАЛЬНЫЕ ЧИСЛА (N)</text>
+                <text x="10" y="280" class="text-xs font-semibold fill-slate-400">КВАДРАТЫ (N²)</text>
+            </svg>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                    <p class="text-sm text-blue-800">
+                        <strong>Вывод:</strong> Поскольку мы можем соединить каждое число n с его квадратом n^2 без остатка, мощности этих множеств равны.
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="addPair()" class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg font-medium transition">
+                        Добавить число
+                    </button>
+                    <button onclick="reset()" class="border border-slate-300 hover:bg-slate-100 text-slate-600 px-6 py-2 rounded-lg font-medium transition">
+                        Сброс
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 rounded-xl p-4">
+                <h3 class="text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">Математическая суть</h3>
+                <p class="text-sm text-slate-600 italic">
+                    "Свойство «быть меньше целого» присуще только конечным множествам. Для бесконечных множеств часть может быть равна целому."
+                </p>
+                <p class="text-xs text-slate-400 mt-2">— Пересказ идей Галилея (1638 г.)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let count = 0;
+        const maxCount = 10;
+        const svg = document.getElementById('viz-svg');
+        const linesGroup = document.getElementById('lines-group');
+        const natGroup = document.getElementById('natural-numbers');
+        const sqGroup = document.getElementById('square-numbers');
+
+        function createNode(x, y, val, colorClass, isSquare) {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("class", "number-node");
+            
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", x);
+            circle.setAttribute("cy", y);
+            circle.setAttribute("r", "22");
+            circle.setAttribute("class", `${colorClass} stroke-white stroke-2 shadow-sm`);
+            
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", x);
+            text.setAttribute("y", y + 5);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("class", "fill-white font-bold text-sm");
+            text.textContent = val;
+
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("x", x);
+            label.setAttribute("y", isSquare ? y + 45 : y - 35);
+            label.setAttribute("text-anchor", "middle");
+            label.setAttribute("class", "fill-slate-400 text-[10px]");
+            label.textContent = isSquare ? `n² = ${val}` : `n = ${val}`;
+
+            g.appendChild(circle);
+            g.appendChild(text);
+            g.appendChild(label);
+            return g;
+        }
+
+        function addPair() {
+            if (count >= maxCount) {
+                const infiniteText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                infiniteText.setAttribute("x", 700);
+                infiniteText.setAttribute("y", 160);
+                infiniteText.setAttribute("class", "fill-slate-300 italic text-2xl");
+                infiniteText.textContent = "... и так до бесконечности";
+                svg.appendChild(infiniteText);
+                return;
+            }
+
+            count++;
+            const x = 60 + (count - 1) * 75;
+            const yTop = 80;
+            const yBottom = 240;
+            
+            // Draw connection line
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            line.setAttribute("d", `M ${x} ${yTop} L ${x} ${yBottom}`);
+            line.setAttribute("class", "line-path stroke-blue-200 stroke-[3px] fill-none");
+            linesGroup.appendChild(line);
+
+            // Add numbers
+            natGroup.appendChild(createNode(x, yTop, count, "fill-blue-500", false));
+            sqGroup.appendChild(createNode(x, yBottom, count * count, "fill-indigo-600", true));
+        }
+
+        function reset() {
+            count = 0;
+            linesGroup.innerHTML = '';
+            natGroup.innerHTML = '';
+            sqGroup.innerHTML = '';
+            const lastChild = svg.lastChild;
+            if (lastChild.tagName === 'text' && lastChild.textContent.includes('бесконечности')) {
+                svg.removeChild(lastChild);
+            }
+            // Start with some initial pairs
+            for(let i=0; i<3; i++) addPair();
+        }
+
+        // Initialize
+        window.onload = () => {
+            for(let i=0; i<4; i++) addPair();
+        };
+    </script>
+</body>
+</html>
